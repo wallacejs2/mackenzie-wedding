@@ -236,9 +236,10 @@ const App: React.FC = () => {
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {venues.length === 0 ? (
-            <div className="text-center text-stone-500 mt-10">
-                <p>No venues added yet.</p>
-                <p>Click "Add New Venue" to get started!</p>
+            <div className="px-4 py-10">
+                <EmptyState icon="calendar-days" title="No venues added yet.">
+                    Click "Add New Venue" to get started!
+                </EmptyState>
             </div>
           ) : (
             venues.map(venue => (
@@ -291,18 +292,21 @@ const VenueCard: React.FC<{ venue: Venue, onSelect: (venue: Venue) => void, isSe
     );
 };
 
+const EmptyState: React.FC<{ icon: string; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
+    <div className="text-center p-4 rounded-lg bg-stone-100">
+      <Icon name={icon} className="w-16 h-16 mx-auto text-stone-300" />
+      <h3 className="mt-4 text-lg font-semibold text-stone-700">{title}</h3>
+      <p className="mt-1 text-sm text-stone-500">{children}</p>
+    </div>
+);
+  
+
 const WelcomeScreen = () => (
     <div className="h-full flex flex-col justify-center items-center text-center p-8 bg-gradient-to-br from-rose-50 to-stone-50">
         <div className="max-w-md">
-            <h2 className="text-4xl font-bold text-stone-700">Welcome to Your Venue Calculator</h2>
-            <p className="mt-4 text-stone-500 text-lg">
+            <EmptyState icon="sparkles" title="Welcome to Your Venue Calculator">
                 Select a venue from the list to see its cost breakdown, or add a new one to start comparing.
-            </p>
-            <div className="mt-8 text-rose-300">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-24 w-24 mx-auto" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                </svg>
-            </div>
+            </EmptyState>
         </div>
     </div>
 );

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Venue, PricingItem, PricingCategory, ProgressStep } from '../types';
 import { Icon } from './Icons';
@@ -36,6 +37,28 @@ const initialVenueState: Omit<Venue, 'id'> = {
   progress: JSON.parse(JSON.stringify(initialProgressSteps)),
   tasks: [],
   updates: [],
+};
+
+const CollapsibleSection: React.FC<{ title: string, children: React.ReactNode, defaultOpen?: boolean }> = ({ title, children, defaultOpen = false }) => {
+    const [isOpen, setIsOpen] = useState(defaultOpen);
+
+    return (
+        <div className="border border-stone-200 rounded-lg">
+            <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full flex justify-between items-center p-4 text-left font-semibold text-stone-700 hover:bg-stone-50"
+            >
+                {title}
+                <Icon name="chevron-down" className={`w-5 h-5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isOpen && (
+                <div className="p-4 border-t border-stone-200 bg-stone-50/50">
+                    {children}
+                </div>
+            )}
+        </div>
+    );
 };
 
 export const VenueForm: React.FC<VenueFormProps> = ({ venueToEdit, onSave, onClose }) => {
@@ -185,65 +208,65 @@ export const VenueForm: React.FC<VenueFormProps> = ({ venueToEdit, onSave, onClo
                 <textarea id="notes" name="notes" rows={3} value={venue.notes} onChange={handleChange} className="w-full p-2 border border-stone-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"></textarea>
               </div>
               
-              {/* Available Dates */}
-              <div className="space-y-2">
-                <h3 className="text-lg font-medium text-stone-700">Available Dates</h3>
-                 {venue.availableDates.map(date => (
-                  <div key={date} className="flex items-center justify-between bg-stone-100 p-2 rounded-md">
-                    <span>{date}</span>
-                    <button type="button" onClick={() => handleRemoveDate(date)} className="text-red-500 hover:text-red-700"><Icon name="trash" className="w-4 h-4" /></button>
-                  </div>
-                ))}
-                <div className="flex gap-2">
-                  <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="flex-grow p-2 border border-stone-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500" />
-                  <button type="button" onClick={handleAddDate} className="bg-rose-100 text-rose-700 p-2 rounded-md hover:bg-rose-200"><Icon name="plus" className="w-5 h-5" /></button>
+              <CollapsibleSection title="Available Dates">
+                <div className="space-y-2">
+                    {venue.availableDates.map(date => (
+                    <div key={date} className="flex items-center justify-between bg-white p-2 rounded-md border">
+                        <span>{date}</span>
+                        <button type="button" onClick={() => handleRemoveDate(date)} className="text-red-500 hover:text-red-700"><Icon name="trash" className="w-4 h-4" /></button>
+                    </div>
+                    ))}
+                    <div className="flex gap-2">
+                    <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="flex-grow p-2 border border-stone-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500" />
+                    <button type="button" onClick={handleAddDate} className="bg-rose-100 text-rose-700 p-2 rounded-md hover:bg-rose-200"><Icon name="plus" className="w-5 h-5" /></button>
+                    </div>
                 </div>
-              </div>
+              </CollapsibleSection>
 
               {/* Pricing Categories */}
-              <div className="space-y-4">
-                  <h3 className="text-xl font-semibold text-stone-800 border-b pb-2">Pricing Details</h3>
-                  {venue.pricingCategories.map(category => (
-                       <div key={category.id} className="p-4 border border-stone-200 rounded-lg bg-stone-50">
-                           <div className="flex justify-between items-start gap-2 mb-2">
-                               <div className="flex-1">
-                                   <input
-                                       type="text"
-                                       value={category.name}
-                                       onChange={(e) => handleCategoryChange(category.id, 'name', e.target.value)}
-                                       placeholder="Category Name"
-                                       className="text-lg font-semibold text-stone-700 p-1 -ml-1 w-full bg-transparent rounded-md focus:bg-white focus:ring-1 focus:ring-rose-500 outline-none"
-                                   />
-                                    <select
-                                       value={category.selectionType}
-                                       onChange={(e) => handleCategoryChange(category.id, 'selectionType', e.target.value as 'single' | 'multiple')}
-                                       className="text-xs mt-1 p-1 border border-stone-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500 w-auto"
-                                   >
-                                       <option value="multiple">Multiple Selections</option>
-                                       <option value="single">Single Selection</option>
-                                   </select>
-                               </div>
-                               <button type="button" onClick={() => handleRemoveCategory(category.id)} className="text-stone-400 hover:text-red-500 p-1">
-                                   <Icon name="trash" className="w-5 h-5" />
-                               </button>
-                           </div>
-                           
-                           <PricingCategoryFormSection 
-                               category={category}
-                               onAddItem={(newItem) => handleAddPriceItem(category.id, newItem)}
-                               onRemoveItem={(itemId) => handleRemovePriceItem(category.id, itemId)}
-                           />
-                       </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={handleAddCategory}
-                    className="w-full flex items-center justify-center gap-2 text-rose-600 font-semibold py-2 px-4 rounded-lg border-2 border-dashed border-rose-300 hover:bg-rose-100 transition-colors"
-                >
-                    <Icon name="plus" className="w-5 h-5" />
-                    Add Pricing Category
-                </button>
-              </div>
+                <div className="space-y-4">
+                    <h3 className="text-xl font-semibold text-stone-800 border-b pb-2">Pricing Details</h3>
+                    {venue.pricingCategories.map(category => (
+                        <CollapsibleSection title={category.name} key={category.id}>
+                            <div className="flex justify-between items-start gap-2 mb-4">
+                                <div className="flex-1">
+                                    <input
+                                        type="text"
+                                        value={category.name}
+                                        onChange={(e) => handleCategoryChange(category.id, 'name', e.target.value)}
+                                        placeholder="Category Name"
+                                        className="text-lg font-semibold text-stone-700 p-1 -ml-1 w-full bg-transparent rounded-md focus:bg-white focus:ring-1 focus:ring-rose-500 outline-none"
+                                    />
+                                        <select
+                                        value={category.selectionType}
+                                        onChange={(e) => handleCategoryChange(category.id, 'selectionType', e.target.value as 'single' | 'multiple')}
+                                        className="text-xs mt-1 p-1 border border-stone-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500 w-auto"
+                                    >
+                                        <option value="multiple">Multiple Selections</option>
+                                        <option value="single">Single Selection</option>
+                                    </select>
+                                </div>
+                                <button type="button" onClick={() => handleRemoveCategory(category.id)} className="text-stone-400 hover:text-red-500 p-1">
+                                    <Icon name="trash" className="w-5 h-5" />
+                                </button>
+                            </div>
+                            
+                            <PricingCategoryFormSection 
+                                category={category}
+                                onAddItem={(newItem) => handleAddPriceItem(category.id, newItem)}
+                                onRemoveItem={(itemId) => handleRemovePriceItem(category.id, itemId)}
+                            />
+                        </CollapsibleSection>
+                    ))}
+                    <button
+                        type="button"
+                        onClick={handleAddCategory}
+                        className="w-full flex items-center justify-center gap-2 text-rose-600 font-semibold py-2 px-4 rounded-lg border-2 border-dashed border-rose-300 hover:bg-rose-100 transition-colors"
+                    >
+                        <Icon name="plus" className="w-5 h-5" />
+                        Add Pricing Category
+                    </button>
+                </div>
             </div>
           </div>
           {/* Footer */}
