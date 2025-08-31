@@ -1,6 +1,6 @@
 
-import React, { useMemo } from 'react';
-import { Venue, PricingCategory, PricingItem } from '../types';
+import React, { useMemo, useState } from 'react';
+import { Venue, PricingCategory, PricingItem, ProgressStep, Task } from '../types';
 import { Icon } from './Icons';
 import { StarRating } from './StarRating';
 
@@ -64,6 +64,21 @@ export const VenueDetail: React.FC<VenueDetailProps> = ({ venue, onClose, onEdit
     onVenueUpdate({ ...venue, pricingCategories: updatedCategories });
   };
 
+   const handleProgressToggle = (stepId: string) => {
+    const updatedProgress = venue.progress.map(step => {
+        if (step.id === stepId) {
+            const isNowCompleted = !step.completed;
+            return {
+                ...step,
+                completed: isNowCompleted,
+                date: isNowCompleted ? new Date().toLocaleDateString('en-CA') : null // YYYY-MM-DD format
+            };
+        }
+        return step;
+    });
+    onVenueUpdate({ ...venue, progress: updatedProgress });
+  };
+
   return (
     <div className="bg-white p-8 rounded-l-xl shadow-lg relative h-full overflow-y-auto">
       <button onClick={onClose} className="absolute top-6 right-6 text-stone-400 hover:text-stone-600">
@@ -111,6 +126,10 @@ export const VenueDetail: React.FC<VenueDetailProps> = ({ venue, onClose, onEdit
                     <PricingCategoryDetail category={category} onToggle={handlePricingToggle} />
                 </DetailSection>
             ))}
+
+            <DetailSection title="Progress Tracker">
+              <ProgressTracker progress={venue.progress || []} onToggle={handleProgressToggle} />
+            </DetailSection>
         </div>
 
         <div className="space-y-6">
@@ -137,6 +156,14 @@ export const VenueDetail: React.FC<VenueDetailProps> = ({ venue, onClose, onEdit
 
             <DetailSection title="Notes">
               <p className="text-stone-600 whitespace-pre-wrap text-sm">{venue.notes || 'No notes added.'}</p>
+            </DetailSection>
+
+            <DetailSection title="Tasks">
+              <TaskManager tasks={venue.tasks || []} onVenueUpdate={onVenueUpdate} venue={venue} />
+            </DetailSection>
+            
+            <DetailSection title="Updates">
+              <UpdatesManager updates={venue.updates || []} onVenueUpdate={onVenueUpdate} venue={venue} />
             </DetailSection>
         </div>
       </div>
@@ -192,3 +219,175 @@ const DetailSection: React.FC<DetailSectionProps> = ({ title, children }) => (
         {children}
     </div>
 );
+
+// --- New Components for Tracking ---
+
+interface ProgressTrackerProps {
+    progress: ProgressStep[];
+    onToggle: (stepId: string) => void;
+}
+
+const ProgressTracker: React.FC<ProgressTrackerProps> = ({ progress, onToggle }) => {
+    return (
+        <div className="space-y-2">
+            {progress.map(step => (
+                <label key={step.id} className="flex items-center justify-between p-3 bg-stone-50 rounded-lg hover:bg-stone-100 cursor-pointer">
+                    <div className="flex items-center">
+                        <input
+                            type="checkbox"
+                            checked={step.completed}
+                            onChange={() => onToggle(step.id)}
+                            className="h-4 w-4 border-stone-300 text-rose-500 focus:ring-rose-500 rounded"
+                        />
+                        <span className={`ml-3 text-stone-700 ${step.completed ? 'line-through text-stone-400' : ''}`}>{step.name}</span>
+                    </div>
+                    {step.completed && step.date && (
+                        <span className="text-xs text-stone-500">{step.date}</span>
+                    )}
+                </label>
+            ))}
+        </div>
+    );
+};
+
+interface TaskManagerProps {
+    tasks: Task[];
+    venue: Venue;
+    onVenueUpdate: (venue: Venue) => void;
+}
+
+const TaskManager: React.FC<TaskManagerProps> = ({ tasks, venue, onVenueUpdate }) => {
+    const [newTask, setNewTask] = useState({ name: '', assignedTo: '', dueDate: '' });
+
+    const handleAddTask = () => {
+        if (!newTask.name) return;
+        const taskToAdd: Task = {
+            id: Date.now().toString(),
+            ...newTask,
+            isCompleted: false
+        };
+        onVenueUpdate({ ...venue, tasks: [...venue.tasks, taskToAdd] });
+        setNewTask({ name: '', assignedTo: '', dueDate: '' });
+    };
+
+    const handleToggleTask = (taskId: string) => {
+        const updatedTasks = venue.tasks.map(task => 
+            task.id === taskId ? { ...task, isCompleted: !task.isCompleted } : task
+        );
+        onVenueUpdate({ ...venue, tasks: updatedTasks });
+    };
+
+    const handleRemoveTask = (taskId: string) => {
+        const updatedTasks = venue.tasks.filter(task => task.id !== taskId);
+        onVenueUpdate({ ...venue, tasks: updatedTasks });
+    };
+    
+    return (
+        <div className="space-y-3">
+            {tasks.map(task => (
+                <div key={task.id} className={`p-2 rounded-md flex items-start gap-3 ${task.isCompleted ? 'bg-green-50' : 'bg-stone-50'}`}>
+                    <input
+                        type="checkbox"
+                        checked={task.isCompleted}
+                        onChange={() => handleToggleTask(task.id)}
+                        className="h-4 w-4 border-stone-300 text-rose-500 focus:ring-rose-500 rounded mt-1 shrink-0"
+                    />
+                    <div className="flex-1">
+                        <p className={`text-stone-800 text-sm ${task.isCompleted ? 'line-through text-stone-500' : ''}`}>{task.name}</p>
+                        {(task.assignedTo || task.dueDate) && (
+                            <p className="text-xs text-stone-500">
+                                {task.assignedTo && <span>Assigned to: {task.assignedTo}</span>}
+                                {task.assignedTo && task.dueDate && <span className="mx-1">|</span>}
+                                {task.dueDate && <span>Due: {task.dueDate}</span>}
+                            </p>
+                        )}
+                    </div>
+                    <button onClick={() => handleRemoveTask(task.id)} className="text-stone-400 hover:text-red-500 p-1">
+                        <Icon name="trash" className="w-4 h-4" />
+                    </button>
+                </div>
+            ))}
+            {tasks.length === 0 && <p className="text-sm text-stone-500 italic">No tasks yet.</p>}
+            
+            <div className="pt-4 border-t border-stone-200 space-y-2">
+                <h4 className="text-sm font-semibold text-stone-600">Add a new task</h4>
+                <input
+                    type="text"
+                    placeholder="Task description"
+                    value={newTask.name}
+                    onChange={e => setNewTask({ ...newTask, name: e.target.value })}
+                    className="w-full p-2 text-sm border border-stone-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
+                />
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        placeholder="Assigned to"
+                        value={newTask.assignedTo}
+                        onChange={e => setNewTask({ ...newTask, assignedTo: e.target.value })}
+                        className="w-1/2 p-2 text-sm border border-stone-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
+                    />
+                    <input
+                        type="date"
+                        placeholder="Due date"
+                        value={newTask.dueDate}
+                        onChange={e => setNewTask({ ...newTask, dueDate: e.target.value })}
+                        className="w-1/2 p-2 text-sm border border-stone-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
+                    />
+                </div>
+                <button
+                    onClick={handleAddTask}
+                    className="w-full text-sm bg-rose-500 text-white font-semibold py-2 px-3 rounded-lg hover:bg-rose-600 transition-colors"
+                >
+                    Add Task
+                </button>
+            </div>
+        </div>
+    );
+};
+
+interface UpdatesManagerProps {
+    updates: string[];
+    venue: Venue;
+    onVenueUpdate: (venue: Venue) => void;
+}
+
+const UpdatesManager: React.FC<UpdatesManagerProps> = ({ updates, venue, onVenueUpdate }) => {
+    const [newUpdate, setNewUpdate] = useState('');
+
+    const handleAddUpdate = () => {
+        if (!newUpdate.trim()) return;
+        const date = new Date().toLocaleString();
+        const fullUpdate = `${date}: ${newUpdate}`;
+        onVenueUpdate({ ...venue, updates: [fullUpdate, ...venue.updates] });
+        setNewUpdate('');
+    };
+    
+    return (
+        <div className="space-y-3">
+             <div className="space-y-2">
+                <textarea
+                    rows={2}
+                    placeholder="Add an update or note..."
+                    value={newUpdate}
+                    onChange={e => setNewUpdate(e.target.value)}
+                    className="w-full p-2 text-sm border border-stone-300 rounded-md shadow-sm focus:ring-rose-500 focus:border-rose-500"
+                />
+                <button
+                    onClick={handleAddUpdate}
+                    className="w-full text-sm bg-stone-600 text-white font-semibold py-2 px-3 rounded-lg hover:bg-stone-700 transition-colors"
+                >
+                    Add Update
+                </button>
+            </div>
+
+            <div className="pt-4 border-t border-stone-200 space-y-2 max-h-48 overflow-y-auto">
+                {updates.map((update, index) => (
+                    <div key={index} className="p-2 bg-stone-50 rounded-md text-sm text-stone-700 whitespace-pre-wrap">
+                        {update}
+                    </div>
+                ))}
+                {updates.length === 0 && <p className="text-sm text-stone-500 italic">No updates yet.</p>}
+            </div>
+        </div>
+    );
+};

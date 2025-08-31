@@ -1,7 +1,22 @@
 
-export interface PricingItem {
+export interface ProgressStep {
   id: string;
   name: string;
+  completed: boolean;
+  date: string | null;
+}
+
+export interface Task {
+  id: string;
+  name: string;
+  assignedTo: string;
+  dueDate: string;
+  isCompleted: boolean;
+}
+
+export interface PricingItem {
+  id: string;
+  name:string;
   cost: number;
   isIncluded: boolean;
   costType?: 'flat' | 'per_guest';
@@ -24,4 +39,7 @@ export interface Venue {
   pricingCategories: PricingCategory[];
   availableDates: string[];
   guestCount: number;
+  progress: ProgressStep[];
+  tasks: Task[];
+  updates: string[];
 }

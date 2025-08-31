@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Venue, PricingItem, PricingCategory } from '../types';
+import { Venue, PricingItem, PricingCategory, ProgressStep } from '../types';
 import { Icon } from './Icons';
 import { StarRating } from './StarRating';
 
@@ -16,6 +16,13 @@ const initialPricingCategories: PricingCategory[] = [
     { id: 'bar', name: 'Bar', selectionType: 'multiple', items: [] },
 ];
 
+const initialProgressSteps: ProgressStep[] = [
+    { id: 'inquired', name: 'Inquired', completed: false, date: null },
+    { id: 'tour', name: 'Scheduled Tour', completed: false, date: null },
+    { id: 'contract', name: 'Received Contract', completed: false, date: null },
+    { id: 'booked', name: 'Booked!', completed: false, date: null },
+];
+
 
 const initialVenueState: Omit<Venue, 'id'> = {
   name: '',
@@ -26,6 +33,9 @@ const initialVenueState: Omit<Venue, 'id'> = {
   pricingCategories: JSON.parse(JSON.stringify(initialPricingCategories)),
   availableDates: [],
   guestCount: 100,
+  progress: JSON.parse(JSON.stringify(initialProgressSteps)),
+  tasks: [],
+  updates: [],
 };
 
 export const VenueForm: React.FC<VenueFormProps> = ({ venueToEdit, onSave, onClose }) => {
@@ -38,7 +48,10 @@ export const VenueForm: React.FC<VenueFormProps> = ({ venueToEdit, onSave, onClo
     if (venueToEdit) {
       setVenue({
         ...initialVenueState,
-        ...venueToEdit
+        ...venueToEdit,
+        progress: venueToEdit.progress || JSON.parse(JSON.stringify(initialProgressSteps)),
+        tasks: venueToEdit.tasks || [],
+        updates: venueToEdit.updates || [],
       });
     } else {
       setVenue({ ...initialVenueState, pricingCategories: JSON.parse(JSON.stringify(initialPricingCategories)) });
@@ -134,7 +147,7 @@ export const VenueForm: React.FC<VenueFormProps> = ({ venueToEdit, onSave, onClo
     onSave({
       ...venue,
       id: venueToEdit?.id || Date.now().toString(),
-    });
+    } as Venue);
   };
 
   return (

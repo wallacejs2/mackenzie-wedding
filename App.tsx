@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Venue, PricingCategory, PricingItem } from './types';
+import { Venue, PricingCategory, PricingItem, ProgressStep } from './types';
 import { VenueForm } from './components/VenueForm';
 import { VenueDetail } from './components/VenueDetail';
 import { Icon } from './components/Icons';
@@ -29,6 +29,13 @@ const calculateTotalCost = (venue: Venue): number => {
     return totalCost;
 };
 
+const initialProgressSteps: ProgressStep[] = [
+    { id: 'inquired', name: 'Inquired', completed: false, date: null },
+    { id: 'tour', name: 'Scheduled Tour', completed: false, date: null },
+    { id: 'contract', name: 'Received Contract', completed: false, date: null },
+    { id: 'booked', name: 'Booked!', completed: false, date: null },
+];
+
 
 const App: React.FC = () => {
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -40,32 +47,46 @@ const App: React.FC = () => {
     try {
       const storedVenues = localStorage.getItem('weddingVenues');
       if (storedVenues) {
-        const parsedVenues = JSON.parse(storedVenues).map((v: any) => {
-            // If pricingCategories exists, it's a newer format; just ensure url exists.
+        const parsedVenues = JSON.parse(storedVenues).map((v: any): Venue => {
+            let migratedVenue: any;
+
+            // --- MIGRATION LOGIC ---
             if (v.pricingCategories) {
-                return { ...v, url: v.url || '' };
+                // It's a newer format, just copy it over
+                migratedVenue = { ...v, url: v.url || '' };
+            } else {
+                // It's an older format, migrate pricing
+                const migratedCategories: PricingCategory[] = [
+                    { id: 'rental', name: 'Venue Rental', selectionType: 'single', items: [] },
+                    { id: 'packages', name: 'Packages', selectionType: 'multiple', items: (v.pricing || []).map((p: any) => ({ ...p, isIncluded: p.isIncluded === undefined ? true : p.isIncluded })) },
+                    { id: 'food', name: 'Food', selectionType: 'multiple', items: [] },
+                    { id: 'bar', name: 'Bar', selectionType: 'multiple', items: [] },
+                ];
+                migratedVenue = {
+                    id: v.id,
+                    name: v.name,
+                    location: v.location,
+                    url: v.url || '',
+                    rating: v.rating,
+                    notes: v.notes,
+                    availableDates: v.availableDates || [],
+                    guestCount: v.guestCount || 100,
+                    pricingCategories: migratedCategories
+                };
             }
 
-            // --- ONE-TIME MIGRATION FOR OLDER FORMATS ---
-            // Old structure, needs migration from a flat `pricing` array.
-            const migratedCategories: PricingCategory[] = [
-                { id: 'rental', name: 'Venue Rental', selectionType: 'single', items: [] },
-                { id: 'packages', name: 'Packages', selectionType: 'multiple', items: (v.pricing || []).map((p: any) => ({ ...p, isIncluded: p.isIncluded === undefined ? true : p.isIncluded })) },
-                { id: 'food', name: 'Food', selectionType: 'multiple', items: [] },
-                { id: 'bar', name: 'Bar', selectionType: 'multiple', items: [] },
-            ];
+            // Ensure new tracking fields exist on all venues
+            if (!migratedVenue.progress) {
+              migratedVenue.progress = JSON.parse(JSON.stringify(initialProgressSteps));
+            }
+            if (!migratedVenue.tasks) {
+              migratedVenue.tasks = [];
+            }
+            if (!migratedVenue.updates) {
+              migratedVenue.updates = [];
+            }
 
-            return {
-                id: v.id,
-                name: v.name,
-                location: v.location,
-                url: v.url || '',
-                rating: v.rating,
-                notes: v.notes,
-                availableDates: v.availableDates || [],
-                guestCount: v.guestCount || 100,
-                pricingCategories: migratedCategories
-            };
+            return migratedVenue as Venue;
         });
         setVenues(parsedVenues);
       }
