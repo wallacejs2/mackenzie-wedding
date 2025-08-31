@@ -12,20 +12,23 @@ interface VenueDetailProps {
 }
 
 const calculateCosts = (venue: Venue) => {
-    const grandTotal = venue.pricingCategories.reduce((total, category) => {
-        let categoryTotal = 0;
+    let grandTotal = 0;
+    for (const category of venue.pricingCategories) {
         if (category.selectionType === 'single') {
+            // For single selection, find the one included item.
+            // This is robust against data where multiple items might be mistakenly included.
             const selectedItem = category.items.find(item => item.isIncluded);
             if (selectedItem) {
-                categoryTotal = selectedItem.cost;
+                grandTotal += selectedItem.cost;
             }
         } else {
-            categoryTotal = category.items
+            // For multiple selections, sum all included items.
+            const categoryTotal = category.items
                 .filter(item => item.isIncluded)
                 .reduce((sum, item) => sum + item.cost, 0);
+            grandTotal += categoryTotal;
         }
-        return total + categoryTotal;
-    }, 0);
+    }
 
     const costPerGuest = venue.guestCount > 0 ? grandTotal / venue.guestCount : 0;
     return { grandTotal, costPerGuest };

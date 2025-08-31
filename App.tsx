@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Venue, PricingCategory } from './types';
 import { VenueForm } from './components/VenueForm';
@@ -8,20 +7,25 @@ import { StarRating } from './components/StarRating';
 
 const calculateTotalCost = (venue: Venue): number => {
     if (!venue.pricingCategories) return 0;
-    return venue.pricingCategories.reduce((total, category) => {
-        let categoryTotal = 0;
+
+    let grandTotal = 0;
+    for (const category of venue.pricingCategories) {
         if (category.selectionType === 'single') {
-            const selectedItem = category.items.find(p => p.isIncluded);
+            // For single selection, find the one included item.
+            // This prevents summing multiple items if the data is in an inconsistent state.
+            const selectedItem = category.items.find(item => item.isIncluded);
             if (selectedItem) {
-                categoryTotal = selectedItem.cost;
+                grandTotal += selectedItem.cost;
             }
         } else {
-            categoryTotal = category.items
-                .filter(p => p.isIncluded)
+            // For categories that allow multiple selections, sum up all included items.
+            const categoryTotal = category.items
+                .filter(item => item.isIncluded)
                 .reduce((sum, item) => sum + item.cost, 0);
+            grandTotal += categoryTotal;
         }
-        return total + categoryTotal;
-    }, 0);
+    }
+    return grandTotal;
 };
 
 
