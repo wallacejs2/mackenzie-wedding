@@ -1,44 +1,32 @@
 
 import React, { useState, useEffect } from 'react';
-import { Venue, PricingCategory } from './types';
+import { Venue, PricingCategory, PricingItem } from './types';
 import { VenueForm } from './components/VenueForm';
 import { VenueDetail } from './components/VenueDetail';
 import { Icon } from './components/Icons';
 import { StarRating } from './components/StarRating';
 
 const calculateTotalCost = (venue: Venue): number => {
-    let totalFlatCost = 0;
-    let totalPerGuestCost = 0;
-
+    let totalCost = 0;
     if (!venue.pricingCategories) {
-         return 0;
+        return 0;
     }
 
     for (const category of venue.pricingCategories) {
-        if (category.selectionType === 'single') {
-            const selectedItem = category.items.find(item => item.isIncluded);
-            if (selectedItem) {
-                const costType = selectedItem.costType || 'flat';
-                if (costType === 'per_guest') {
-                    totalPerGuestCost += selectedItem.cost;
-                } else {
-                    totalFlatCost += selectedItem.cost;
-                }
-            }
-        } else { // 'multiple'
-            const selectedItems = category.items.filter(item => item.isIncluded);
-            for (const item of selectedItems) {
-                const costType = item.costType || 'flat';
-                if (costType === 'per_guest') {
-                    totalPerGuestCost += item.cost;
-                } else {
-                    totalFlatCost += item.cost;
-                }
+        const itemsToSum = category.selectionType === 'single'
+            ? [category.items.find(item => item.isIncluded)].filter(Boolean) as PricingItem[]
+            : category.items.filter(item => item.isIncluded);
+        
+        for (const item of itemsToSum) {
+            if (item.costType === 'per_guest') {
+                totalCost += item.cost * venue.guestCount;
+            } else { // Handles 'flat' and undefined
+                totalCost += item.cost;
             }
         }
     }
     
-    return totalFlatCost + (totalPerGuestCost * venue.guestCount);
+    return totalCost;
 };
 
 

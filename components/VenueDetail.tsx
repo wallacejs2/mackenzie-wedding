@@ -13,41 +13,27 @@ interface VenueDetailProps {
 }
 
 const calculateCosts = (venue: Venue) => {
-    let totalFlatCost = 0;
-    let totalPerGuestCost = 0;
+    let totalCost = 0;
 
-    if (!venue.pricingCategories) {
-         return { grandTotal: 0, costPerGuest: 0 };
-    }
-
-    for (const category of venue.pricingCategories) {
-        if (category.selectionType === 'single') {
-            const selectedItem = category.items.find(item => item.isIncluded);
-            if (selectedItem) {
-                const costType = selectedItem.costType || 'flat';
-                if (costType === 'per_guest') {
-                    totalPerGuestCost += selectedItem.cost;
-                } else {
-                    totalFlatCost += selectedItem.cost;
-                }
-            }
-        } else { // 'multiple'
-            const selectedItems = category.items.filter(item => item.isIncluded);
-            for (const item of selectedItems) {
-                const costType = item.costType || 'flat';
-                if (costType === 'per_guest') {
-                    totalPerGuestCost += item.cost;
-                } else {
-                    totalFlatCost += item.cost;
+    if (venue.pricingCategories) {
+        for (const category of venue.pricingCategories) {
+            const itemsToSum = category.selectionType === 'single'
+                ? [category.items.find(item => item.isIncluded)].filter(Boolean) as PricingItem[]
+                : category.items.filter(item => item.isIncluded);
+    
+            for (const item of itemsToSum) {
+                 if (item.costType === 'per_guest') {
+                    totalCost += item.cost * venue.guestCount;
+                } else { // Handles 'flat' and undefined
+                    totalCost += item.cost;
                 }
             }
         }
     }
     
-    const grandTotal = totalFlatCost + (totalPerGuestCost * venue.guestCount);
-    const costPerGuest = venue.guestCount > 0 ? grandTotal / venue.guestCount : 0;
+    const costPerGuest = venue.guestCount > 0 ? totalCost / venue.guestCount : 0;
     
-    return { grandTotal, costPerGuest };
+    return { grandTotal: totalCost, costPerGuest };
 };
 
 export const VenueDetail: React.FC<VenueDetailProps> = ({ venue, onClose, onEdit, onDelete, onVenueUpdate }) => {
