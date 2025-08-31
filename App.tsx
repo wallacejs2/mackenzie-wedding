@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Venue, PricingCategory } from './types';
 import { VenueForm } from './components/VenueForm';
@@ -6,26 +7,38 @@ import { Icon } from './components/Icons';
 import { StarRating } from './components/StarRating';
 
 const calculateTotalCost = (venue: Venue): number => {
-    if (!venue.pricingCategories) return 0;
+    let totalFlatCost = 0;
+    let totalPerGuestCost = 0;
 
-    let grandTotal = 0;
+    if (!venue.pricingCategories) {
+         return 0;
+    }
+
     for (const category of venue.pricingCategories) {
         if (category.selectionType === 'single') {
-            // For single selection, find the one included item.
-            // This prevents summing multiple items if the data is in an inconsistent state.
             const selectedItem = category.items.find(item => item.isIncluded);
             if (selectedItem) {
-                grandTotal += selectedItem.cost;
+                const costType = selectedItem.costType || 'flat';
+                if (costType === 'per_guest') {
+                    totalPerGuestCost += selectedItem.cost;
+                } else {
+                    totalFlatCost += selectedItem.cost;
+                }
             }
-        } else {
-            // For categories that allow multiple selections, sum up all included items.
-            const categoryTotal = category.items
-                .filter(item => item.isIncluded)
-                .reduce((sum, item) => sum + item.cost, 0);
-            grandTotal += categoryTotal;
+        } else { // 'multiple'
+            const selectedItems = category.items.filter(item => item.isIncluded);
+            for (const item of selectedItems) {
+                const costType = item.costType || 'flat';
+                if (costType === 'per_guest') {
+                    totalPerGuestCost += item.cost;
+                } else {
+                    totalFlatCost += item.cost;
+                }
+            }
         }
     }
-    return grandTotal;
+    
+    return totalFlatCost + (totalPerGuestCost * venue.guestCount);
 };
 
 
@@ -152,7 +165,7 @@ const App: React.FC = () => {
             .flatMap(category => 
                 category.items
                     .filter(item => item.isIncluded)
-                    .map(item => `${category.name} - ${item.name} ($${item.cost.toFixed(2)})`)
+                    .map(item => `${category.name} - ${item.name} ($${item.cost.toFixed(2)}${item.costType === 'per_guest' ? '/guest' : ''})`)
             )
             .join('; ');
 

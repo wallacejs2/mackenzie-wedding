@@ -4,6 +4,7 @@ export interface PricingItem {
   name: string;
   cost: number;
   isIncluded: boolean;
+  costType?: 'flat' | 'per_guest';
 }
 
 export interface PricingCategory {

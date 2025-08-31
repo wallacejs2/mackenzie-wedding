@@ -1,5 +1,6 @@
+
 import React, { useMemo } from 'react';
-import { Venue, PricingCategory } from '../types';
+import { Venue, PricingCategory, PricingItem } from '../types';
 import { Icon } from './Icons';
 import { StarRating } from './StarRating';
 
@@ -12,25 +13,40 @@ interface VenueDetailProps {
 }
 
 const calculateCosts = (venue: Venue) => {
-    let grandTotal = 0;
-    for (const category of venue.pricingCategories) {
-        if (category.selectionType === 'single') {
-            // For single selection, find the one included item.
-            // This is robust against data where multiple items might be mistakenly included.
-            const selectedItem = category.items.find(item => item.isIncluded);
-            if (selectedItem) {
-                grandTotal += selectedItem.cost;
-            }
-        } else {
-            // For multiple selections, sum all included items.
-            const categoryTotal = category.items
-                .filter(item => item.isIncluded)
-                .reduce((sum, item) => sum + item.cost, 0);
-            grandTotal += categoryTotal;
-        }
+    let totalFlatCost = 0;
+    let totalPerGuestCost = 0;
+
+    if (!venue.pricingCategories) {
+         return { grandTotal: 0, costPerGuest: 0 };
     }
 
+    for (const category of venue.pricingCategories) {
+        if (category.selectionType === 'single') {
+            const selectedItem = category.items.find(item => item.isIncluded);
+            if (selectedItem) {
+                const costType = selectedItem.costType || 'flat';
+                if (costType === 'per_guest') {
+                    totalPerGuestCost += selectedItem.cost;
+                } else {
+                    totalFlatCost += selectedItem.cost;
+                }
+            }
+        } else { // 'multiple'
+            const selectedItems = category.items.filter(item => item.isIncluded);
+            for (const item of selectedItems) {
+                const costType = item.costType || 'flat';
+                if (costType === 'per_guest') {
+                    totalPerGuestCost += item.cost;
+                } else {
+                    totalFlatCost += item.cost;
+                }
+            }
+        }
+    }
+    
+    const grandTotal = totalFlatCost + (totalPerGuestCost * venue.guestCount);
     const costPerGuest = venue.guestCount > 0 ? grandTotal / venue.guestCount : 0;
+    
     return { grandTotal, costPerGuest };
 };
 
@@ -168,7 +184,10 @@ const PricingCategoryDetail: React.FC<PricingCategoryDetailProps> = ({ category,
               />
               <span className="ml-3 text-stone-700">{item.name}</span>
             </div>
-            <span className="font-medium text-stone-800">{item.cost.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span>
+            <div className="text-right">
+                <span className="font-medium text-stone-800">{item.cost.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</span>
+                {item.costType === 'per_guest' && <span className="text-xs text-stone-500 block">per guest</span>}
+            </div>
           </label>
         ))}
       </div>
