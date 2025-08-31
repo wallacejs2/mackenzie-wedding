@@ -9,9 +9,17 @@ import { StarRating } from './components/StarRating';
 const calculateTotalCost = (venue: Venue): number => {
     if (!venue.pricingCategories) return 0;
     return venue.pricingCategories.reduce((total, category) => {
-        const categoryTotal = category.items
-            .filter(p => p.isIncluded)
-            .reduce((sum, item) => sum + item.cost, 0);
+        let categoryTotal = 0;
+        if (category.selectionType === 'single') {
+            const selectedItem = category.items.find(p => p.isIncluded);
+            if (selectedItem) {
+                categoryTotal = selectedItem.cost;
+            }
+        } else {
+            categoryTotal = category.items
+                .filter(p => p.isIncluded)
+                .reduce((sum, item) => sum + item.cost, 0);
+        }
         return total + categoryTotal;
     }, 0);
 };

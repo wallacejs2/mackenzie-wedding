@@ -13,9 +13,17 @@ interface VenueDetailProps {
 
 const calculateCosts = (venue: Venue) => {
     const grandTotal = venue.pricingCategories.reduce((total, category) => {
-        const categoryTotal = category.items
-            .filter(item => item.isIncluded)
-            .reduce((sum, item) => sum + item.cost, 0);
+        let categoryTotal = 0;
+        if (category.selectionType === 'single') {
+            const selectedItem = category.items.find(item => item.isIncluded);
+            if (selectedItem) {
+                categoryTotal = selectedItem.cost;
+            }
+        } else {
+            categoryTotal = category.items
+                .filter(item => item.isIncluded)
+                .reduce((sum, item) => sum + item.cost, 0);
+        }
         return total + categoryTotal;
     }, 0);
 
