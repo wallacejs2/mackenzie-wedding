@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { Venue, PricingCategory, PricingItem, ProgressStep, Task } from '../types';
 import { Icon } from './Icons';
@@ -12,7 +11,7 @@ interface VenueDetailProps {
   onVenueUpdate: (venue: Venue) => void;
 }
 
-type ActiveTab = 'overview' | 'pricing' | 'tasks';
+type ActiveTab = 'overview' | 'pricing' | 'updates';
 
 const calculateCosts = (venue: Venue) => {
     let totalCost = 0;
@@ -112,13 +111,16 @@ export const VenueDetail: React.FC<VenueDetailProps> = ({ venue, onClose, onEdit
                                 </div>
                             ) : <p className="text-stone-500">No dates listed.</p>}
                         </DetailSection>
+                         <DetailSection title="Notes">
+                            <p className="text-stone-600 whitespace-pre-wrap text-sm bg-stone-50 p-3 rounded-md">{venue.notes || 'No notes added.'}</p>
+                        </DetailSection>
                     </div>
                     <div className="space-y-6">
                         <DetailSection title="Progress Tracker">
                             <ProgressTracker progress={venue.progress || []} onToggle={handleProgressToggle} />
                         </DetailSection>
-                         <DetailSection title="Notes">
-                            <p className="text-stone-600 whitespace-pre-wrap text-sm bg-stone-50 p-3 rounded-md">{venue.notes || 'No notes added.'}</p>
+                        <DetailSection title="Tasks">
+                            <TaskManager tasks={venue.tasks || []} onVenueUpdate={onVenueUpdate} venue={venue} />
                         </DetailSection>
                     </div>
                 </div>
@@ -133,12 +135,9 @@ export const VenueDetail: React.FC<VenueDetailProps> = ({ venue, onClose, onEdit
                     ))}
                 </div>
              );
-        case 'tasks':
+        case 'updates':
             return (
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <DetailSection title="Tasks">
-                        <TaskManager tasks={venue.tasks || []} onVenueUpdate={onVenueUpdate} venue={venue} />
-                    </DetailSection>
+                 <div className="space-y-6">
                     <DetailSection title="Updates">
                         <UpdatesManager updates={venue.updates || []} onVenueUpdate={onVenueUpdate} venue={venue} />
                     </DetailSection>
@@ -189,7 +188,7 @@ export const VenueDetail: React.FC<VenueDetailProps> = ({ venue, onClose, onEdit
         <nav className="-mb-px flex space-x-6">
             <TabButton name="Overview" tab="overview" activeTab={activeTab} onClick={setActiveTab} />
             <TabButton name="Pricing" tab="pricing" activeTab={activeTab} onClick={setActiveTab} />
-            <TabButton name="Tasks & Updates" tab="tasks" activeTab={activeTab} onClick={setActiveTab} />
+            <TabButton name="Updates" tab="updates" activeTab={activeTab} onClick={setActiveTab} />
         </nav>
       </div>
 
@@ -439,7 +438,7 @@ const UpdatesManager: React.FC<UpdatesManagerProps> = ({ updates, venue, onVenue
                 </button>
             </div>
 
-            <div className="pt-4 border-t border-stone-200 space-y-2 max-h-48 overflow-y-auto">
+            <div className="pt-4 border-t border-stone-200 space-y-2">
                 {updates.map((update, index) => (
                     <div key={index} className="p-2 bg-stone-50 rounded-md text-sm text-stone-700 whitespace-pre-wrap">
                         {update}
